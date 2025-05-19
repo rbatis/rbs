@@ -6,17 +6,26 @@
 ## use example
 ```rust
 use std::collections::HashMap;
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct A {
+    pub name: String,
+}
+
 fn main(){
-    #[derive(serde::Serialize, serde::Deserialize, Debug)]
-    pub struct A {
-        pub name: String,
-    }
     let a = A {
         name: "sss".to_string(),
     };
-    let v = rbs::to_value(a).unwrap();
-    println!("v: {}",v);
-    let s: A = rbs::from_value(v).unwrap();
-    println!("s:{:?}", s);
+    let value = rbs::to_value(a).unwrap();
+    println!("value: {}",value);
+    let a: A = rbs::from_value(value).unwrap();
+    println!("a:{:?}", a);
+    
+    //macro
+    let val = to_value! {
+            "name": "Alice",
+            "age": 30,
+            "city": "New York"
+        };
+    println!("val: {}",val);
 }
 ```

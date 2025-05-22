@@ -10,7 +10,7 @@ struct TestStruct {
 }
 
 #[test]
-fn test_to_value() {
+fn test_value() {
     // 测试基本类型转换
     assert_eq!(value(123).unwrap(), Value::I32(123));
     assert_eq!(value("test").unwrap(), Value::String("test".to_string()));

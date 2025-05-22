@@ -44,7 +44,7 @@ macro_rules! value {
         {
             let mut map = $crate::value::map::ValueMap::new();
             $(
-                $crate::to_value!(@map_entry map $k $v);
+                $crate::value!(@map_entry map $k $v);
             )*
             $crate::Value::Map(map)
         }
@@ -55,7 +55,7 @@ macro_rules! value {
         {
             let mut map = $crate::value::map::ValueMap::new();
             $(
-                $crate::to_value!(@map_entry map $k $v);
+                $crate::value!(@map_entry map $k $v);
             )*
             $crate::Value::Map(map)
         }
@@ -66,7 +66,7 @@ macro_rules! value {
         {
             let mut map = $crate::value::map::ValueMap::new();
             $(
-                map.insert($crate::to_value!($k), $crate::to_value!($v));
+                map.insert($crate::value!($k), $crate::value!($v));
             )*
             $crate::Value::Map(map)
         }
@@ -75,13 +75,13 @@ macro_rules! value {
     // Internal helper rule: handle key-value pairs in a map
     (@map_entry $map:ident $k:tt {$($ik:tt: $iv:tt),* $(,)*}) => {
         // Process nested object
-        let inner_map = $crate::to_value!({$($ik: $iv),*});
-        $map.insert($crate::to_value!($k), inner_map);
+        let inner_map = $crate::value!({$($ik: $iv),*});
+        $map.insert($crate::value!($k), inner_map);
     };
     
     // Handle regular key-value pairs
     (@map_entry $map:ident $k:tt $v:tt) => {
-        $map.insert($crate::to_value!($k), $crate::to_value!($v));
+        $map.insert($crate::value!($k), $crate::value!($v));
     };
     
     // Handle single expression
@@ -120,7 +120,7 @@ macro_rules! to_value {
         {
             let mut map = $crate::value::map::ValueMap::new();
             $(
-                $crate::to_value!(@map_entry map $k $v);
+                $crate::value!(@map_entry map $k $v);
             )*
             $crate::Value::Map(map)
         }
@@ -131,7 +131,7 @@ macro_rules! to_value {
         {
             let mut map = $crate::value::map::ValueMap::new();
             $(
-                $crate::to_value!(@map_entry map $k $v);
+                $crate::value!(@map_entry map $k $v);
             )*
             $crate::Value::Map(map)
         }
@@ -142,7 +142,7 @@ macro_rules! to_value {
         {
             let mut map = $crate::value::map::ValueMap::new();
             $(
-                map.insert($crate::to_value!($k), $crate::to_value!($v));
+                map.insert($crate::value!($k), $crate::value!($v));
             )*
             $crate::Value::Map(map)
         }
@@ -151,13 +151,13 @@ macro_rules! to_value {
     // Internal helper rule: handle key-value pairs in a map
     (@map_entry $map:ident $k:tt {$($ik:tt: $iv:tt),* $(,)*}) => {
         // Process nested object
-        let inner_map = $crate::to_value!({$($ik: $iv),*});
-        $map.insert($crate::to_value!($k), inner_map);
+        let inner_map = $crate::value!({$($ik: $iv),*});
+        $map.insert($crate::value!($k), inner_map);
     };
     
     // Handle regular key-value pairs
     (@map_entry $map:ident $k:tt $v:tt) => {
-        $map.insert($crate::to_value!($k), $crate::to_value!($v));
+        $map.insert($crate::value!($k), $crate::value!($v));
     };
     
     // Handle single expression

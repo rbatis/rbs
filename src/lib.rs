@@ -11,7 +11,8 @@ mod macros;
 
 pub use crate::error::Error;
 pub use value_serde::{from_value, from_value_ref};
-pub use value_serde::{to_value, to_value_def};
+pub use value_serde::{value, value_def};
+pub use value_serde::{value as to_value, value_def as to_value_def};
 pub use value::Value;
 
 impl Value {

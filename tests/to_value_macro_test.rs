@@ -1,53 +1,53 @@
 #[cfg(test)]
 mod tests {
-    use rbs::{to_value, Value};
+    use rbs::{value, Value};
     use rbs::value::map::ValueMap;
     
     #[test]
-    fn test_to_value_basic_literals() {
-        assert_eq!(to_value!(Option::<i32>::None), Value::Null);
-        assert_eq!(to_value!(true), Value::Bool(true));
-        assert_eq!(to_value!(false), Value::Bool(false));
-        assert_eq!(to_value!(123), Value::I32(123));
-        assert_eq!(to_value!(-123), Value::I32(-123));
-        assert_eq!(to_value!(123i64), Value::I64(123));
-        assert_eq!(to_value!(123u32), Value::U32(123));
-        assert_eq!(to_value!(123u64), Value::U64(123));
-        assert_eq!(to_value!(1.23f32), Value::F32(1.23));
-        assert_eq!(to_value!(1.23f64), Value::F64(1.23));
-        assert_eq!(to_value!("hello"), Value::String("hello".to_string()));
+    fn test_value_basic_literals() {
+        assert_eq!(value!(Option::<i32>::None), Value::Null);
+        assert_eq!(value!(true), Value::Bool(true));
+        assert_eq!(value!(false), Value::Bool(false));
+        assert_eq!(value!(123), Value::I32(123));
+        assert_eq!(value!(-123), Value::I32(-123));
+        assert_eq!(value!(123i64), Value::I64(123));
+        assert_eq!(value!(123u32), Value::U32(123));
+        assert_eq!(value!(123u64), Value::U64(123));
+        assert_eq!(value!(1.23f32), Value::F32(1.23));
+        assert_eq!(value!(1.23f64), Value::F64(1.23));
+        assert_eq!(value!("hello"), Value::String("hello".to_string()));
         
         let s = "world".to_string();
-        assert_eq!(to_value!(s.clone()), Value::String("world".to_string())); // Test with variable
+        assert_eq!(value!(s.clone()), Value::String("world".to_string())); // Test with variable
 
         let n = 42;
-        assert_eq!(to_value!(n), Value::I32(42));
+        assert_eq!(value!(n), Value::I32(42));
     }
 
 
     #[test]
-    fn test_to_value_vec_i32() {
+    fn test_value_vec_i32() {
         let bytes_vec: Vec<i32> = vec![4, 5, 6];
-        assert_eq!(to_value!(bytes_vec), to_value![4, 5, 6]);
+        assert_eq!(value!(bytes_vec), value![4, 5, 6]);
     }
 
     #[test]
-    fn test_to_value_basic_use() {
-        let v = rbs::to_value! {
+    fn test_value_basic_use() {
+        let v = rbs::value! {
             "id": 1,
             "user": {
                 "name": "Alice"
             }
         };
-        assert_eq!(to_value!(v).to_string(), r#"{"id":1,"user":{"name":"Alice"}}"#);
+        assert_eq!(value!(v).to_string(), r#"{"id":1,"user":{"name":"Alice"}}"#);
     }
     
 
     #[test]
-    fn test_to_value_simple_map_implicit_braces() {
-        // This form is shown in documentation: to_value! { "key": "value" }
+    fn test_value_simple_map_implicit_braces() {
+        // This form is shown in documentation: value! { "key": "value" }
         // It seems to be handled by the ($($k:tt: $v:expr),* $(,)?) arm
-        let val = to_value! {
+        let val = value! {
             "name": "Alice",
             "age": 30,
             "city": "New York"
@@ -62,10 +62,10 @@ mod tests {
     }
 
     #[test]
-    fn test_to_value_simple_map_explicit_braces_in_parens() {
-        // This form to_value!({ "key": "value" })
+    fn test_value_simple_map_explicit_braces_in_parens() {
+        // This form value!({ "key": "value" })
         // It matches the ({$($k:tt: $v:tt),* $(,)*}) arm
-        let val = to_value!({
+        let val = value!({
             "name": "Bob",
             "age": 25i64, // Use i64 for variety
             "active": true
@@ -80,12 +80,12 @@ mod tests {
     }
 
     #[test]
-    fn test_to_value_simple_map_direct_kv_in_parens() {
-        // This form to_value!(key: value, key2: value2)
+    fn test_value_simple_map_direct_kv_in_parens() {
+        // This form value!(key: value, key2: value2)
         // It matches the ($($k:tt: $v:expr),* $(,)?) arm
         let name_val = "Charlie";
         let age_val = 40u32;
-        let val = to_value!(
+        let val = value!(
             "name": name_val,
             "age": age_val,
             "verified": false
@@ -100,8 +100,8 @@ mod tests {
     }
 
     #[test]
-    fn test_to_value_map_with_trailing_comma() {
-        let val = to_value! {
+    fn test_value_map_with_trailing_comma() {
+        let val = value! {
             "key1": "value1",
             "key2": 123,
         };
@@ -110,7 +110,7 @@ mod tests {
         expected_map.insert(Value::String("key2".to_string()), Value::I32(123));
         assert_eq!(val, Value::Map(expected_map));
 
-        let val2 = to_value!({
+        let val2 = value!({
             "a": 1.0f32,
             "b": true,
         });
@@ -121,34 +121,34 @@ mod tests {
     }
 
     #[test]
-    fn test_to_value_empty_map() {
-        let val_implicit_braces = to_value!{}; // Should use the ($($k:tt: $v:expr),*) arm with zero repetitions
+    fn test_value_empty_map() {
+        let val_implicit_braces = value!{}; // Should use the ($($k:tt: $v:expr),*) arm with zero repetitions
         let expected_empty_map = Value::Map(ValueMap::new());
         assert_eq!(val_implicit_braces, expected_empty_map);
 
-        let val_explicit_braces = to_value!({}); // Should use the ({$($k:tt: $v:tt),*}) arm with zero repetitions
+        let val_explicit_braces = value!({}); // Should use the ({$($k:tt: $v:tt),*}) arm with zero repetitions
         assert_eq!(val_explicit_braces, expected_empty_map);
         
-        // to_value!() is ambiguous and might call the ($arg:expr) arm with an empty tuple if not careful,
+        // value!() is ambiguous and might call the ($arg:expr) arm with an empty tuple if not careful,
         // but given the macro rules, it's more likely to be a compile error or match the map rule.
         // If it matches `($($k:tt: $v:expr),* $(,)?)` with nothing, it should produce an empty map.
-        // Let's test `to_value!()` specifically if it compiles.
-        // It seems to_value!() by itself leads to compile error `unexpected end of macro invocation`
-        // So we only test to_value!{} and to_value!({}).
+        // Let's test `value!()` specifically if it compiles.
+        // It seems value!() by itself leads to compile error `unexpected end of macro invocation`
+        // So we only test value!{} and value!({}).
     }
 
     #[test]
-    fn test_to_value_nested_map_implicit_braces() {
-        let val = to_value! {
+    fn test_value_nested_map_implicit_braces() {
+        let val = value! {
             "id": 1,
-            "user": to_value!{
+            "user": value!{
                 "name": "Alice",
-                "details": to_value!{
+                "details": value!{
                     "verified": true,
                     "score": 100u64
                 }
             },
-            "product": to_value!{
+            "product": value!{
                 "id": "P123",
                 "price": 99.99f32
             }
@@ -175,12 +175,12 @@ mod tests {
     }
 
     #[test]
-    fn test_to_value_nested_map_explicit_braces_in_parens() {
-         let val = to_value!{
+    fn test_value_nested_map_explicit_braces_in_parens() {
+         let val = value!{
             "level1_key": "level1_val",
-            "nested": to_value!{
+            "nested": value!{
                 "level2_key": 123,
-                "deeper_nested": to_value!{
+                "deeper_nested": value!{
                     "level3_key": true
                 }
             }
@@ -203,13 +203,13 @@ mod tests {
     #[test]
     fn test_nested_map_from_documentation_example() {
         // Example from the macro documentation
-        let val = to_value! {
+        let val = value! {
             "id": 1, 
-            "user": to_value!{
+            "user": value!{
                 "name": "Alice",
-                "address": to_value!{
+                "address": value!{
                     "city": "Beijing",
-                    "street": to_value!{
+                    "street": value!{
                         "number": 123
                     }
                 }
@@ -235,9 +235,9 @@ mod tests {
     }
 
     #[test]
-    fn test_to_value_map_with_array_value() {
+    fn test_value_map_with_array_value() {
         let arr_val = Value::Array(vec![Value::I32(1), Value::String("two".to_string())]);
-        let val = to_value! {
+        let val = value! {
             "data": arr_val.clone(), // Use an existing Value::Array
             "id": 123
         };
@@ -250,55 +250,55 @@ mod tests {
 
         // Test with an expression that evaluates to a serializable vec
         let my_vec = vec![true, false];
-        let val2 = to_value! {
-            "flags": my_vec.clone() // my_vec will be passed to to_value(my_vec)
+        let val2 = value! {
+            "flags": my_vec.clone() // my_vec will be passed to value(my_vec)
         };
         let mut expected_map2 = ValueMap::new();
-        // to_value(vec![true, false]) will create Value::Array(vec![Value::Bool(true), Value::Bool(false)])
+        // value(vec![true, false]) will create Value::Array(vec![Value::Bool(true), Value::Bool(false)])
         let expected_arr_val = Value::Array(vec![Value::Bool(true), Value::Bool(false)]);
         expected_map2.insert(Value::String("flags".to_string()), expected_arr_val);
         assert_eq!(val2, Value::Map(expected_map2));
     }
 
     #[test]
-    fn test_to_value_map_with_non_string_literal_keys() {
+    fn test_value_map_with_non_string_literal_keys() {
         let key_name_str = "my_key";
-        // Test with implicit braces form: to_value! { key: value }
-        let val = to_value! {
-            key_name_str: "value_for_ident_key", // key_name_str (a variable) will be to_value!(key_name_str)
-            123: "value_for_numeric_key",      // 123 (a literal) will be to_value!(123)
+        // Test with implicit braces form: value! { key: value }
+        let val = value! {
+            key_name_str: "value_for_ident_key", // key_name_str (a variable) will be value!(key_name_str)
+            123: "value_for_numeric_key",      // 123 (a literal) will be value!(123)
             "string_lit_key": key_name_str // ensure string literal key also works with var value
         };
 
         let mut expected_map = ValueMap::new();
-        // to_value!(key_name_str) -> Value::String("my_key")
+        // value!(key_name_str) -> Value::String("my_key")
         expected_map.insert(Value::String(key_name_str.to_string()), Value::String("value_for_ident_key".to_string()));
-        // to_value!(123) -> Value::I32(123)
+        // value!(123) -> Value::I32(123)
         expected_map.insert(Value::I32(123), Value::String("value_for_numeric_key".to_string()));
         expected_map.insert(Value::String("string_lit_key".to_string()), Value::String(key_name_str.to_string()));
         
         assert_eq!(val, Value::Map(expected_map));
 
-        // Test with the explicit braces in parens form: to_value!({ key: value })
+        // Test with the explicit braces in parens form: value!({ key: value })
         let key_name_str_2 = "my_key_2"; // use a different variable to avoid shadowing issues if any confusion
-        let val2 = to_value!({
+        let val2 = value!({
             key_name_str_2: true,
             456u32: 1.23f64, // Using u32 for key type variety
             "another_lit_key": false
         });
         let mut expected_map2 = ValueMap::new();
         expected_map2.insert(Value::String(key_name_str_2.to_string()), Value::Bool(true));
-        // to_value!(456u32) -> Value::U32(456)
+        // value!(456u32) -> Value::U32(456)
         expected_map2.insert(Value::U32(456), Value::F64(1.23)); 
         expected_map2.insert(Value::String("another_lit_key".to_string()), Value::Bool(false));
         assert_eq!(val2, Value::Map(expected_map2));
     }
 
     #[test]
-    fn test_to_value_special_nested_arm_direct_match() {
+    fn test_value_special_nested_arm_direct_match() {
         // This should match {$($k:tt: {$($ik:tt: $iv:tt),* $(,)*}),* $(,)*}} rule directly
-        // Syntax: to_value! { outer_key1: { ik1: iv1 }, outer_key2: { ik2: iv2 } }
-        let val = to_value! {
+        // Syntax: value! { outer_key1: { ik1: iv1 }, outer_key2: { ik2: iv2 } }
+        let val = value! {
             "user_profile": { // Inner part is a brace-enclosed map
                 "name": "Eve",
                 "level": 5
@@ -310,24 +310,24 @@ mod tests {
         };
         
         let mut user_profile_map = ValueMap::new();
-        // Inside this arm, keys and values are recursively passed to to_value!
-        // For the value of "user_profile", `to_value!({ "name": "Eve", "level": 5 })` will be called.
-        user_profile_map.insert(to_value!("name"), to_value!("Eve"));
-        user_profile_map.insert(to_value!("level"), to_value!(5));
+        // Inside this arm, keys and values are recursively passed to value!
+        // For the value of "user_profile", `value!({ "name": "Eve", "level": 5 })` will be called.
+        user_profile_map.insert(value!("name"), value!("Eve"));
+        user_profile_map.insert(value!("level"), value!(5));
 
         let mut settings_map = ValueMap::new();
-        // For "settings", `to_value!({ "theme": "dark", "notifications": true })` will be called.
-        settings_map.insert(to_value!("theme"), to_value!("dark"));
-        settings_map.insert(to_value!("notifications"), to_value!(true));
+        // For "settings", `value!({ "theme": "dark", "notifications": true })` will be called.
+        settings_map.insert(value!("theme"), value!("dark"));
+        settings_map.insert(value!("notifications"), value!(true));
 
         let mut expected_map = ValueMap::new();
-        expected_map.insert(to_value!("user_profile"), Value::Map(user_profile_map));
-        expected_map.insert(to_value!("settings"), Value::Map(settings_map));
+        expected_map.insert(value!("user_profile"), Value::Map(user_profile_map));
+        expected_map.insert(value!("settings"), Value::Map(settings_map));
 
         assert_eq!(val, Value::Map(expected_map));
 
         // Single top-level entry matching this arm
-        let val_single = to_value! {
+        let val_single = value! {
             "data_points": {
                 "point_x": 10.5f32,
                 "point_y": 20.0f32, // trailing comma in inner map
@@ -335,16 +335,16 @@ mod tests {
             } 
         };
         let mut data_points_map = ValueMap::new();
-        data_points_map.insert(to_value!("point_x"), Value::F32(10.5));
-        data_points_map.insert(to_value!("point_y"), Value::F32(20.0));
-        data_points_map.insert(to_value!("label"), to_value!("Sample"));
+        data_points_map.insert(value!("point_x"), Value::F32(10.5));
+        data_points_map.insert(value!("point_y"), Value::F32(20.0));
+        data_points_map.insert(value!("label"), value!("Sample"));
         
         let mut expected_single = ValueMap::new();
-        expected_single.insert(to_value!("data_points"), Value::Map(data_points_map));
+        expected_single.insert(value!("data_points"), Value::Map(data_points_map));
         assert_eq!(val_single, Value::Map(expected_single));
 
         // Test this arm with an empty inner map for one of the keys
-        let val_empty_inner = to_value! {
+        let val_empty_inner = value! {
             "config": {
                 "retries": 3
             },
@@ -352,31 +352,31 @@ mod tests {
         };
         
         let mut config_map = ValueMap::new();
-        config_map.insert(to_value!("retries"), to_value!(3));
+        config_map.insert(value!("retries"), value!(3));
         
-        // The inner call for "empty_section" will be to_value!({})
+        // The inner call for "empty_section" will be value!({})
         let empty_inner_map = ValueMap::new(); 
 
         let mut expected_empty_inner = ValueMap::new();
-        expected_empty_inner.insert(to_value!("config"), Value::Map(config_map));
-        expected_empty_inner.insert(to_value!("empty_section"), Value::Map(empty_inner_map)); // This becomes Value::Map(ValueMap {})
+        expected_empty_inner.insert(value!("config"), Value::Map(config_map));
+        expected_empty_inner.insert(value!("empty_section"), Value::Map(empty_inner_map)); // This becomes Value::Map(ValueMap {})
         assert_eq!(val_empty_inner, Value::Map(expected_empty_inner));
     }
 
     #[test]
-    fn test_to_value_nested_call_syntax() {
-        // 测试不同形式的嵌套 to_value! 调用语法
+    fn test_value_nested_call_syntax() {
+        // 测试不同形式的嵌套 value! 调用语法
         
-        // 形式1：内部使用 to_value!{...}（推荐用于嵌套调用）
-        let val1 = to_value! {
-            "nested": to_value!{
+        // 形式1：内部使用 value!{...}（推荐用于嵌套调用）
+        let val1 = value! {
+            "nested": value!{
                 "foo": "bar"
             }
         };
         
-        // 形式2：内部使用 to_value!(...)（等价于形式1）
-        let val2 = to_value! {
-            "nested": to_value!(
+        // 形式2：内部使用 value!(...)（等价于形式1）
+        let val2 = value! {
+            "nested": value!(
                 "foo": "bar"
             )
         };
@@ -392,7 +392,7 @@ mod tests {
         assert_eq!(val2, Value::Map(expected_map));
         assert_eq!(val1, val2);
         
-        // 注意：形式3 to_value!({...}) 在嵌套时可能导致 linter 错误
+        // 注意：形式3 value!({...}) 在嵌套时可能导致 linter 错误
         // 但实际编译和运行应该也是正确的
     }
 } 

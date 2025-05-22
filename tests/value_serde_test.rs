@@ -1,4 +1,4 @@
-use rbs::{from_value, to_value, Value};
+use rbs::{from_value, value, Value};
 use std::collections::HashMap;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
@@ -12,22 +12,22 @@ struct TestStruct {
 #[test]
 fn test_to_value() {
     // 测试基本类型转换
-    assert_eq!(to_value(123).unwrap(), Value::I32(123));
-    assert_eq!(to_value("test").unwrap(), Value::String("test".to_string()));
-    assert_eq!(to_value(true).unwrap(), Value::Bool(true));
+    assert_eq!(value(123).unwrap(), Value::I32(123));
+    assert_eq!(value("test").unwrap(), Value::String("test".to_string()));
+    assert_eq!(value(true).unwrap(), Value::Bool(true));
     
     // 测试Option类型
     let opt_some: Option<i32> = Some(123);
     let opt_none: Option<i32> = None;
     
-    assert_eq!(to_value(opt_some).unwrap(), Value::I32(123));
-    assert_eq!(to_value(opt_none).unwrap(), Value::Null);
+    assert_eq!(value(opt_some).unwrap(), Value::I32(123));
+    assert_eq!(value(opt_none).unwrap(), Value::Null);
     
     // 测试Vec类型
     let vec_data = vec![1, 2, 3];
-    let value = to_value(vec_data).unwrap();
+    let v = value(vec_data).unwrap();
     
-    if let Value::Array(arr) = value {
+    if let Value::Array(arr) = v {
         assert_eq!(arr.len(), 3);
         assert_eq!(arr[0], Value::I32(1));
         assert_eq!(arr[1], Value::I32(2));
@@ -41,7 +41,7 @@ fn test_to_value() {
     map.insert("key1".to_string(), 123);
     map.insert("key2".to_string(), 456);
     
-    let value = to_value(map).unwrap();
+    let value = value!(map);
     if let Value::Map(value_map) = value {
         assert_eq!(value_map.len(), 2);
         
@@ -73,7 +73,7 @@ fn test_to_value() {
         data: Some(vec![1, 2, 3]),
     };
     
-    let value = to_value(test_struct).unwrap();
+    let value = value!(test_struct);
     if let Value::Map(value_map) = value {
         assert_eq!(value_map.len(), 4);
         
@@ -179,7 +179,7 @@ fn test_roundtrip() {
         data: Some(vec![4, 5, 6]),
     };
     
-    let value = to_value(original.clone()).unwrap();
+    let value = value(original.clone()).unwrap();
     let roundtrip: TestStruct = from_value(value).unwrap();
     
     assert_eq!(original, roundtrip);

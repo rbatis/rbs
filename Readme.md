@@ -15,13 +15,13 @@ fn main(){
     let a = A {
         name: "sss".to_string(),
     };
-    let value = rbs::to_value(a).unwrap();
+    let value = rbs::value(a).unwrap();
     println!("value: {}",value);
     let a: A = rbs::from_value(value).unwrap();
     println!("a:{:?}", a);
     
     //macro
-    let val = to_value! {
+    let val = value! {
             "name": "Alice",
             "age": 30,
             "city": "New York"

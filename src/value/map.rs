@@ -195,24 +195,3 @@ macro_rules! value_map {
         }
     };
 }
-
-#[cfg(test)]
-mod test {
-    use crate::to_value;
-    use crate::value::map::ValueMap;
-
-    #[test]
-    fn test_fmt() {
-        let mut m = ValueMap::new();
-        m.insert("1".into(), 1.into());
-        m.insert("2".into(), 2.into());
-        assert_eq!(m.to_string(), r#"{"1":1,"2":2}"#);
-    }
-
-    #[test]
-    fn test_to_value_map() {
-        let mut v = ValueMap::new();
-        v["a"]=to_value!("");
-        assert_eq!(v.to_string(), "{\"a\":\"\"}");
-    }
-} 

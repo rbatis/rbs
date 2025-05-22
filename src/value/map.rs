@@ -189,7 +189,7 @@ macro_rules! value_map {
         {
             let mut m = $crate::value::map::ValueMap::with_capacity(50);
             $(
-                m.insert($crate::to_value!($k), $crate::to_value!($v));
+                m.insert($crate::value!($k), $crate::value!($v));
             )*
             m
         }

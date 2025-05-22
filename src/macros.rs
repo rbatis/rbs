@@ -1,10 +1,10 @@
-/// to_value macro
+/// value macro
 ///
-/// to_value! map
+/// value! map
 ///```rust
 /// let v=  rbs::value! {"1":"1",};
 ///```
-/// to_value! expr
+/// value! expr
 ///```rust
 /// let arg="1";
 /// let v =  rbs::value!(arg);
@@ -12,7 +12,7 @@
 /// 
 /// JSON example:
 /// ```ignore
-/// let v = rbs::to_value! {
+/// let v = rbs::value! {
 ///     "id": 1, 
 ///     "user": {
 ///         "name": "Alice",
@@ -50,7 +50,7 @@ macro_rules! value {
         }
     };
     
-    // Handle object form with parentheses: to_value!({k:v})
+    // Handle object form with parentheses: value!({k:v})
     ({$($k:tt: $v:tt),* $(,)*}) => {
         {
             let mut map = $crate::value::map::ValueMap::new();
@@ -61,7 +61,7 @@ macro_rules! value {
         }
     };
     
-    // Handle key-value pairs: to_value!(k:v)
+    // Handle key-value pairs: value!(k:v)
     ($($k:tt: $v:expr),* $(,)?) => {
         {
             let mut map = $crate::value::map::ValueMap::new();
@@ -89,10 +89,10 @@ macro_rules! value {
         $crate::value($arg).unwrap_or_default()
     };
     
-    // Array syntax: to_value![a, b, c]
+    // Array syntax: value![a, b, c]
     [$($v:expr),* $(,)*] => {
         {
-            // Use to_value function directly to handle arrays, avoiding recursive expansion
+            // Use value function directly to handle arrays, avoiding recursive expansion
             $crate::value(vec![$($crate::value($v).unwrap_or_default()),*]).unwrap_or_default()
         }
     };
@@ -126,7 +126,7 @@ macro_rules! to_value {
         }
     };
     
-    // Handle object form with parentheses: to_value!({k:v})
+    // Handle object form with parentheses: value!({k:v})
     ({$($k:tt: $v:tt),* $(,)*}) => {
         {
             let mut map = $crate::value::map::ValueMap::new();
@@ -137,7 +137,7 @@ macro_rules! to_value {
         }
     };
     
-    // Handle key-value pairs: to_value!(k:v)
+    // Handle key-value pairs: value!(k:v)
     ($($k:tt: $v:expr),* $(,)?) => {
         {
             let mut map = $crate::value::map::ValueMap::new();
@@ -165,10 +165,10 @@ macro_rules! to_value {
         $crate::value($arg).unwrap_or_default()
     };
     
-    // Array syntax: to_value![a, b, c]
+    // Array syntax: value![a, b, c]
     [$($v:expr),* $(,)*] => {
         {
-            // Use to_value function directly to handle arrays, avoiding recursive expansion
+            // Use value function directly to handle arrays, avoiding recursive expansion
             $crate::value(vec![$($crate::value($v).unwrap_or_default()),*]).unwrap_or_default()
         }
     };

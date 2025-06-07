@@ -644,7 +644,9 @@ impl Display for Value {
                 Display::fmt(val, f)?;
                 f.write_str("\"")
             }
-            Value::Binary(ref val) => Debug::fmt(val, f),
+            Value::Binary(ref val) => {
+                write!(f, "[{}]", val.len())
+            },
             Value::Array(ref vec) => {
                 f.write_str("[")?;
                 let mut i = 0;

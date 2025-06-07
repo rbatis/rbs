@@ -645,7 +645,11 @@ impl Display for Value {
                 f.write_str("\"")
             }
             Value::Binary(ref val) => {
-                write!(f, "[{}]", val.len())
+                if val.len() > 1024 {
+                    write!(f, "[{}]", val.len())
+                } else {
+                    Debug::fmt(val, f)
+                }
             },
             Value::Array(ref vec) => {
                 f.write_str("[")?;

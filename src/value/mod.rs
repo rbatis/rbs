@@ -645,8 +645,8 @@ impl Display for Value {
                 f.write_str("\"")
             }
             Value::Binary(ref val) => {
-                if val.len() > 1024 {
-                    write!(f, "[{}]", val.len())
+                if val.len() > 32 {
+                    Debug::fmt(&val[0..32], f)
                 } else {
                     Debug::fmt(val, f)
                 }

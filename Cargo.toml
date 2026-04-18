@@ -12,14 +12,14 @@
 [package]
 edition = "2021"
 name = "rbs"
-version = "4.8.2"
+version = "4.8.3"
 authors = ["ce <zhuxiujia@qq.com>"]
 build = false
 autolib = false
 autobins = false
 autoexamples = false
 autotests = true
-autobenches = false
+autobenches = true
 description = "Serialization framework for ORM"
 homepage = "https://rbatis.github.io/rbatis.io"
 documentation = "https://rbatis.github.io/rbatis.io"

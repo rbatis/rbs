@@ -186,55 +186,54 @@ fn is_csv_format(values: &[Value]) -> bool {
     }
 }
 
-/// Convert CSV format `[["k1","k2"],[v1,v2],...]` to `[{k1:v1, k2:v2}, ...]`
-fn convert_csv_to_maps(values: Vec<Value>) -> Result<Vec<Value>, crate::Error> {
-    if values.len() < 2 {
-        return Err(crate::Error::E("CSV must have header and at least one data row".to_string()));
-    }
-
-    // First row is headers
-    let headers: Vec<String> = match &values[0] {
-        Value::Array(arr) => arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect(),
-        _ => return Err(crate::Error::E("CSV first row must be array of strings".to_string())),
-    };
-
-    if headers.is_empty() {
-        return Err(crate::Error::E("CSV headers cannot be empty".to_string()));
-    }
-
-    let mut maps = Vec::with_capacity(values.len() - 1);
-    for (idx, row) in values.iter().skip(1).enumerate() {
-        let row_arr = match row {
-            Value::Array(arr) => arr,
-            _ => return Err(crate::Error::E(format!("CSV row {} must be Array", idx + 1))),
-        };
-
-        let mut map = ValueMap::with_capacity(headers.len());
-        for (col_idx, header) in headers.iter().enumerate() {
-            let value = row_arr.get(col_idx).cloned().unwrap_or(Value::Null);
-            map.insert(Value::String(header.clone()), value);
-        }
-        maps.push(Value::Map(map));
-    }
-
-    Ok(maps)
-}
-
-/// SeqAccess that handles both normal arrays and CSV format
+/// SeqAccess that handles both normal arrays and CSV format (lazy conversion)
 struct SeqAccessDeserializer {
     values: Vec<Value>,
     index: usize,
+    // CSV mode fields (only used when csv_mode is true)
     csv_mode: bool,
+    csv_headers: Vec<Value>,
+    csv_row_start: usize,
 }
 
 impl SeqAccessDeserializer {
     fn new(values: Vec<Value>) -> Self {
         let csv_mode = is_csv_format(&values);
+        let csv_headers = if csv_mode {
+            values.get(0).map(|v| v.as_array().unwrap().clone()).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let csv_row_start = 1; // skip header row
         Self {
             values,
             index: 0,
             csv_mode,
+            csv_headers,
+            csv_row_start,
         }
+    }
+
+    /// Lazily convert a single CSV row to a Map
+    fn convert_csv_row(&self, row_index: usize) -> Result<Value, crate::Error> {
+        let row = self.values.get(self.csv_row_start + row_index)
+            .ok_or_else(|| crate::Error::E("CSV row not found".to_string()))?;
+
+        let row_arr = match row {
+            Value::Array(arr) => arr,
+            _ => return Err(crate::Error::E(format!("CSV row {} must be Array", row_index))),
+        };
+
+        let mut map = ValueMap::with_capacity(self.csv_headers.len());
+        for (col_idx, header) in self.csv_headers.iter().enumerate() {
+            let value = row_arr.get(col_idx).cloned().unwrap_or(Value::Null);
+            map.insert(header.clone(), value);
+        }
+        Ok(Value::Map(map))
+    }
+
+    fn csv_total_rows(&self) -> usize {
+        self.values.len().saturating_sub(self.csv_row_start)
     }
 }
 
@@ -245,17 +244,21 @@ impl<'de> SeqAccess<'de> for SeqAccessDeserializer {
     where
         T: DeserializeSeed<'de>,
     {
-        // In CSV mode, convert remaining values to maps on first call
-        if self.csv_mode && self.index == 0 {
-            let csv_values = convert_csv_to_maps(std::mem::take(&mut self.values))?;
-            self.values = csv_values;
-            self.csv_mode = false;
+        if self.csv_mode {
+            // CSV mode: lazily convert each row
+            let row_idx = self.index;
+            if row_idx >= self.csv_total_rows() {
+                return Ok(None);
+            }
+            let map_value = self.convert_csv_row(row_idx)?;
+            self.index += 1;
+            return seed.deserialize(&map_value).map(Some);
         }
 
+        // Normal mode
         if self.index >= self.values.len() {
             return Ok(None);
         }
-
         let val = &self.values[self.index];
         self.index += 1;
         seed.deserialize(val).map(Some)
@@ -284,8 +287,9 @@ impl<'de> Deserializer<'de> for &Value {
                 let len = v.len();
                 let mut de = SeqAccessDeserializer::new(v.clone());
                 let ret = visitor.visit_seq(&mut de);
-                // Check if all elements were consumed (using actual values length, not original)
-                if de.index >= de.values.len() || ret.is_err() {
+                // Check: CSV mode uses csv_total_rows(), normal mode uses values.len()
+                let expected_len = if de.csv_mode { de.csv_total_rows() } else { de.values.len() };
+                if de.index >= expected_len || ret.is_err() {
                     ret
                 } else {
                     Err(serde::de::Error::invalid_length(

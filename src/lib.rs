@@ -2,6 +2,7 @@
 extern crate serde;
 extern crate core;
 
+pub mod csv_table;
 pub mod index;
 pub mod value;
 
@@ -9,6 +10,7 @@ mod value_serde;
 mod error;
 mod macros;
 
+pub use crate::csv_table::VecStruct;
 pub use crate::error::Error;
 pub use value_serde::{from_value, from_value_ref};
 pub use value_serde::{value, value_def};

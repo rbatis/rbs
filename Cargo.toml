@@ -12,13 +12,13 @@
 [package]
 edition = "2021"
 name = "rbs"
-version = "4.7.0"
+version = "4.8.1"
 authors = ["ce <zhuxiujia@qq.com>"]
 build = false
 autolib = false
 autobins = false
 autoexamples = false
-autotests = false
+autotests = true
 autobenches = false
 description = "Serialization framework for ORM"
 homepage = "https://rbatis.github.io/rbatis.io"
@@ -42,22 +42,6 @@ default = []
 [lib]
 name = "rbs"
 path = "src/lib.rs"
-
-[[test]]
-name = "error_test"
-path = "tests/error_test.rs"
-
-[[test]]
-name = "to_value_macro_test"
-path = "tests/to_value_macro_test.rs"
-
-[[test]]
-name = "value_serde_test"
-path = "tests/value_serde_test.rs"
-
-[[test]]
-name = "value_test"
-path = "tests/value_test.rs"
 
 [dependencies.indexmap]
 version = "2.5"

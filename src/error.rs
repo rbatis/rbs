@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::num::{ParseFloatError, ParseIntError, TryFromIntError};
 use std::str::Utf8Error;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Error {
     E(String),
 }

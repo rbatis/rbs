@@ -175,96 +175,6 @@ impl<'de> Deserialize<'de> for Value {
     }
 }
 
-/// Check if values represent CSV format: first element is array of strings
-fn is_csv_format(values: &[Value]) -> bool {
-    if values.is_empty() {
-        return false;
-    }
-    match &values[0] {
-        Value::Array(arr) if !arr.is_empty() && arr.iter().all(|v| v.is_str()) => true,
-        _ => false,
-    }
-}
-
-/// SeqAccess that handles both normal arrays and CSV format (lazy conversion)
-struct SeqAccessDeserializer {
-    values: Vec<Value>,
-    index: usize,
-    // CSV mode fields (only used when csv_mode is true)
-    csv_mode: bool,
-    csv_headers: Vec<Value>,
-    csv_row_start: usize,
-}
-
-impl SeqAccessDeserializer {
-    fn new(values: Vec<Value>) -> Self {
-        let csv_mode = is_csv_format(&values);
-        let csv_headers = if csv_mode {
-            values.get(0).map(|v| v.as_array().unwrap().clone()).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-        let csv_row_start = 1; // skip header row
-        Self {
-            values,
-            index: 0,
-            csv_mode,
-            csv_headers,
-            csv_row_start,
-        }
-    }
-
-    /// Lazily convert a single CSV row to a Map
-    fn convert_csv_row(&self, row_index: usize) -> Result<Value, crate::Error> {
-        let row = self.values.get(self.csv_row_start + row_index)
-            .ok_or_else(|| crate::Error::E("CSV row not found".to_string()))?;
-
-        let row_arr = match row {
-            Value::Array(arr) => arr,
-            _ => return Err(crate::Error::E(format!("CSV row {} must be Array", row_index))),
-        };
-
-        let mut map = ValueMap::with_capacity(self.csv_headers.len());
-        for (col_idx, header) in self.csv_headers.iter().enumerate() {
-            let value = row_arr.get(col_idx).cloned().unwrap_or(Value::Null);
-            map.insert(header.clone(), value);
-        }
-        Ok(Value::Map(map))
-    }
-
-    fn csv_total_rows(&self) -> usize {
-        self.values.len().saturating_sub(self.csv_row_start)
-    }
-}
-
-impl<'de> SeqAccess<'de> for SeqAccessDeserializer {
-    type Error = crate::Error;
-
-    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
-    where
-        T: DeserializeSeed<'de>,
-    {
-        if self.csv_mode {
-            // CSV mode: lazily convert each row
-            let row_idx = self.index;
-            if row_idx >= self.csv_total_rows() {
-                return Ok(None);
-            }
-            let map_value = self.convert_csv_row(row_idx)?;
-            self.index += 1;
-            return seed.deserialize(&map_value).map(Some);
-        }
-
-        // Normal mode
-        if self.index >= self.values.len() {
-            return Ok(None);
-        }
-        let val = &self.values[self.index];
-        self.index += 1;
-        seed.deserialize(val).map(Some)
-    }
-}
-
 impl<'de> Deserializer<'de> for &Value {
     type Error = crate::Error;
 
@@ -285,12 +195,10 @@ impl<'de> Deserializer<'de> for &Value {
             Value::Binary(v) => visitor.visit_bytes(v),
             Value::Array(v) => {
                 let len = v.len();
-                let mut de = SeqAccessDeserializer::new(v.clone());
-                let ret = visitor.visit_seq(&mut de);
-                // Check: CSV mode uses csv_total_rows(), normal mode uses values.len()
-                let expected_len = if de.csv_mode { de.csv_total_rows() } else { de.values.len() };
-                if de.index >= expected_len || ret.is_err() {
-                    ret
+                let mut de = SeqDeserializer::new(v.into_iter());
+                let seq = visitor.visit_seq(&mut de)?;
+                if de.iter.len() == 0 {
+                    Ok(seq)
                 } else {
                     Err(serde::de::Error::invalid_length(
                         len,
@@ -402,6 +310,70 @@ impl<'de> Deserializer<'de> for &Value {
         bool u8 u16 u32 u64 i8 i16 i32 i64 f32 f64 char str string unit seq
         bytes byte_buf map tuple_struct struct
         identifier tuple ignored_any
+    }
+}
+
+struct SeqDeserializer<I> {
+    iter: I,
+}
+
+impl<I> SeqDeserializer<I> {
+    fn new(iter: I) -> Self {
+        Self { iter }
+    }
+}
+
+impl<'de, I, U> SeqAccess<'de> for SeqDeserializer<I>
+where
+    I: Iterator<Item=U>,
+    U: Deserializer<'de, Error=crate::Error>,
+{
+    type Error = crate::Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        match self.iter.next() {
+            Some(val) => seed.deserialize(val).map(Some),
+            None => Ok(None),
+        }
+    }
+}
+
+impl<'de, I, U> Deserializer<'de> for SeqDeserializer<I>
+where
+    I: ExactSizeIterator<Item=U>,
+    U: Deserializer<'de, Error=crate::Error>,
+{
+    type Error = crate::Error;
+
+    #[inline]
+    fn deserialize_any<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        let len = self.iter.len();
+        if len == 0 {
+            visitor.visit_unit()
+        } else {
+            let ret = visitor.visit_seq(&mut self)?;
+            let rem = self.iter.len();
+            if rem == 0 {
+                Ok(ret)
+            } else {
+                Err(serde::de::Error::invalid_length(
+                    len,
+                    &"fewer elements in array",
+                ))
+            }
+        }
+    }
+
+    forward_to_deserialize_any! {
+        bool u8 u16 u32 u64 i8 i16 i32 i64 f32 f64 char str string unit option
+        seq bytes byte_buf map unit_struct newtype_struct
+        tuple_struct struct identifier tuple enum ignored_any
     }
 }
 
